@@ -53,7 +53,6 @@ export default function CommStatusPanel({ entities = {} }) {
       <div className="comm-panel__list">
         {Object.values(entities).map(unit => {
           const isLost = unit.commStatus === 'lost' || unit.commStatus === 'unknown';
-          const isDelayed = unit.commStatus === 'delayed';
 
           return (
             <div
