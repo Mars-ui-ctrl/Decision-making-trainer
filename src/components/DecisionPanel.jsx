@@ -6,12 +6,13 @@ export default function DecisionPanel({
   onSelectDecision,
   isProcessing = false,
 }) {
+  const [prevPromptId, setPrevPromptId] = useState(prompt?.id);
   const [selectedId, setSelectedId] = useState(null);
 
-  // Clear selection if prompt changes
-  useEffect(() => {
+  if (prompt?.id !== prevPromptId) {
+    setPrevPromptId(prompt?.id);
     setSelectedId(null);
-  }, [prompt?.id]);
+  }
 
   const handleSelect = useCallback(
     (option) => {

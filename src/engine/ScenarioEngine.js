@@ -240,8 +240,26 @@ export class ScenarioEngine {
       tradeoff: selectedOption.tradeoff,
       responseTimeMs: Math.round(responseTimeMs),
       timestamp: Date.now(),
+      situationAtTime: {
+        known: 'Bravo entered northern gorge corridor. Telemetry carrier dropped upon entering shadow cut. Last position confirmed 68s ago.',
+        uncertain: 'Exact condition and route viability of Bravo inside the gorge.',
+        commStatus: 'Command: Live | Alpha: Live | Bravo: Lost | Charlie: Live',
+      },
+      outcome: consequence.instructorGuidance.text,
       headline: consequence.headline,
       consequenceText: consequence.instructorGuidance.text,
+      tacticalAnalysis:
+        selectedOption.id === 'relay'
+          ? 'Evaluated using information available at the time: Leveraging elevated terrain to bridge non-line-of-sight VHF coverage directly resolved the known terrain masking without exposing secondary units inside the shadow zone.'
+          : selectedOption.id === 'hold'
+          ? 'Evaluated using information available at the time: Holding position conserved Alpha, but relied on a scheduled check-in when terrain masking was already confirmed.'
+          : 'Evaluated using information available at the time: Recalling Bravo prioritized unit integrity over the mission objective. While it eliminated isolation risk, RF degradation alone in known shadow terrain is an expected condition that can often be resolved with relays before abandoning the mission.',
+      alternativeConsideration:
+        selectedOption.id === 'relay'
+          ? 'Alternative to consider: If Alpha had been required for immediate flank security, Command could have established strict timed-rally triggers.'
+          : selectedOption.id === 'hold'
+          ? 'Alternative to consider: Vector an adjacent unit to an elevated line-of-sight position (such as Eastern Ridge) to bridge communications before the storm closes the corridor.'
+          : 'Alternative to consider: Test line-of-sight relay links from adjacent high ground prior to initiating an operational abort.',
     };
     this.state.decisionHistory.push(record);
 
@@ -338,8 +356,16 @@ export class ScenarioEngine {
       tradeoff: selectedOption.tradeoff,
       responseTimeMs: Math.round(responseTimeMs),
       timestamp: Date.now(),
+      situationAtTime: {
+        known: dec2.headline + (dec2.subtext ? ' — ' + dec2.subtext : ''),
+        uncertain: 'Rate of storm closure across egress corridors.',
+        commStatus: 'Tactical emergency channel synchronized.',
+      },
+      outcome: selectedOption.consequenceText,
       headline: dec2.headline,
       consequenceText: selectedOption.consequenceText,
+      tacticalAnalysis: 'Evaluated using information available at the time: Under rapid environmental deterioration, committing to an extraction rally point minimizes the compound risk of lost units.',
+      alternativeConsideration: 'Alternative to consider: Pre-designating fallback waypoints reduces decision latency during storm onset.',
     };
     this.state.decisionHistory.push(record);
 

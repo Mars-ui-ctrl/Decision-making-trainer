@@ -21,6 +21,7 @@ export function createImmersionTimeline(dispatch) {
   let runId = 0;
   let sleepTimers = [];
   let destroyed = false;
+  let decisionStartTime = 0;
 
   const isCurrent = (id) => id === runId && !destroyed;
 
@@ -321,6 +322,8 @@ export function createImmersionTimeline(dispatch) {
       },
     });
 
+    decisionStartTime = Date.now();
+
     // Instructor voice introduces the decision naturally
     await playScenarioTrack('decisionPrompt', myRun);
     if (!isCurrent(myRun)) return;
@@ -347,6 +350,10 @@ export function createImmersionTimeline(dispatch) {
       isSpeaking: false,
     });
 
+    const responseTimeMs = decisionStartTime ? Date.now() - decisionStartTime : 3500;
+
+    let decisionRecord = null;
+
     if (optionId === 'relay') {
       // -------------------------------------------------------------------
       // CONSEQUENCE: REDIRECT ALPHA
@@ -355,6 +362,26 @@ export function createImmersionTimeline(dispatch) {
       // Bravo restores contact.
       // Trade-off: Alpha is pinned in relay duty and unavailable elsewhere.
       // -------------------------------------------------------------------
+      decisionRecord = {
+        stepIndex: 1,
+        stepTitle: 'Contact Loss in Northern Gorge',
+        selectedOptionId: 'relay',
+        selectedOptionLabel: 'B',
+        selectedOptionTitle: 'Redirect Alpha as High-Ground Relay',
+        responseTimeMs,
+        timestamp: Date.now(),
+        situationAtTime: {
+          known: 'Bravo entered northern gorge corridor; VHF telemetry degraded and carrier dropped upon entering terrain shadow cut. Delayed report from OP-2 indicated movement north through gorge pass (3 min latency).',
+          uncertain: 'Exact position, physical status, and route obstruction status of Bravo inside the RF shadow zone.',
+          commStatus: 'Command: Live | Alpha: Live | Bravo: Lost (Carrier Drop) | Charlie: Live',
+        },
+        outcome: 'Alpha established an elevated relay point along Eastern Ridge, restoring line-of-sight communications. Bravo reported rockfall obstacle and safely rerouted along eastern rim.',
+        tradeoff: 'Tactical link restored — but Alpha is now locked in relay posture on the ridge and cannot support secondary objectives.',
+        tacticalAnalysis: 'Evaluated using information available at the time: Leveraging elevated terrain to bridge non-line-of-sight VHF coverage directly resolved the known terrain masking without exposing secondary units inside the shadow zone.',
+        alternativeConsideration: 'Alternative to consider: If Alpha had been required for immediate flank security, Command could have established strict timed-rally triggers, though that accepts prolonged latency.',
+        consequenceText: 'Communication restored via Alpha relay. Bravo reported rockfall obstruction and rerouted safely while Alpha remains committed to relay posture.',
+      };
+
       dispatch({
         camera: { x: 48, y: 40, zoom: 1.15 },
         entities: {
@@ -405,15 +432,19 @@ export function createImmersionTimeline(dispatch) {
 
       dispatch({
         consequence: {
-          status: 'pass',
-          statusBadge: '✓ PASSED — OPTIMAL TACTICAL DECISION',
+          status: 'operational',
+          statusBadge: 'TACTICAL LINK RESTORED — ASSET COMMITTED',
           headline: 'CONTACT RESTORED VIA ALPHA RELAY',
           choiceMade: 'Option 2: Redirect Alpha to Ridge',
+          situationAtTime: decisionRecord.situationAtTime,
+          outcome: decisionRecord.outcome,
           detail: 'Alpha established an elevated relay point along the high ridge, bridging line-of-sight to Bravo in the gorge corridor. Bravo reported rockfall obstruction and rerouted safely.',
-          tradeoff: 'Tactical link restored — but Alpha is now locked in relay posture on the ridge and cannot support secondary objectives.',
-          explanation: 'Why this succeeded: When teams enter deep terrain gorges, VHF/UHF radio waves cannot penetrate rock masses. Rather than waiting passively or retreating, you leveraged an elevated intermediate team (Alpha) as an RF relay without risking units inside the gorge.',
-          recommended: 'Ideal Tactical Principle: In non-line-of-sight environments, elevated relays bridge communications with zero casualty risk. Always leverage high ground before assuming the worst.',
+          tradeoff: decisionRecord.tradeoff,
+          tacticalAnalysis: decisionRecord.tacticalAnalysis,
+          alternative: decisionRecord.alternativeConsideration,
+          decisionRecord,
         },
+        decisionHistory: [decisionRecord],
       });
 
     } else if (optionId === 'hold') {
@@ -424,6 +455,26 @@ export function createImmersionTimeline(dispatch) {
       // Scheduled window expires without contact.
       // Trade-off: Alpha preserved, but total loss of Bravo awareness.
       // -------------------------------------------------------------------
+      decisionRecord = {
+        stepIndex: 1,
+        stepTitle: 'Contact Loss in Northern Gorge',
+        selectedOptionId: 'hold',
+        selectedOptionLabel: 'A',
+        selectedOptionTitle: 'Maintain Current Position (Hold)',
+        responseTimeMs,
+        timestamp: Date.now(),
+        situationAtTime: {
+          known: 'Bravo entered northern gorge corridor; VHF telemetry degraded and carrier dropped upon entering terrain shadow cut. Delayed report from OP-2 indicated movement north through gorge pass (3 min latency).',
+          uncertain: 'Exact position, physical status, and route obstruction status of Bravo inside the RF shadow zone.',
+          commStatus: 'Command: Live | Alpha: Live | Bravo: Lost (Carrier Drop) | Charlie: Live',
+        },
+        outcome: 'No transmission was received during the scheduled window. The northern storm front closed over the gorge corridor, leaving Bravo stranded in communication darkness.',
+        tradeoff: 'Alpha remained stationary at the southern ridge — but Command is now completely blind to Bravo while sector conditions critically deteriorate.',
+        tacticalAnalysis: 'Evaluated using information available at the time: Holding position conserved Alpha, but relied on a scheduled check-in when terrain masking was already confirmed. In severe RF shadow zones, passive waiting allows environmental and operational windows to close without telemetry.',
+        alternativeConsideration: 'Alternative to consider: Vector an adjacent unit to an elevated line-of-sight position (such as Eastern Ridge) to bridge communications before the storm closes the corridor.',
+        consequenceText: 'Scheduled check-in window elapsed without contact. Uncertainty expanded as a mountain storm front moved into the corridor.',
+      };
+
       dispatch({
         camera: { x: 64, y: 26, zoom: 1.18 },
         weatherIntensity: 0.65,
@@ -456,15 +507,19 @@ export function createImmersionTimeline(dispatch) {
 
       dispatch({
         consequence: {
-          status: 'fail',
-          statusBadge: '✕ FAILED — CRITICAL LOSS OF CONTACT',
+          status: 'consequential',
+          statusBadge: 'COMMUNICATION GAP — UNCERTAINTY EXPANDED',
           headline: 'CHECK-IN WINDOW EXPIRED — UNIT ISOLATED',
           choiceMade: 'Option 1: Maintain Current Position (Hold)',
+          situationAtTime: decisionRecord.situationAtTime,
+          outcome: decisionRecord.outcome,
           detail: 'No transmission was received during the scheduled window. The northern storm front has closed over the gorge corridor, leaving Bravo stranded in communication darkness.',
-          tradeoff: 'Alpha remained stationary at the southern ridge — but Command is now completely blind to Bravo while sector conditions critically deteriorate.',
-          explanation: 'Why this failed: You were deceived by the delayed radio report and assumed the radio silence was temporary. In reality, terrain obstruction was absolute. Passive waiting allowed the weather window to close, turning an RF deadzone into a mission failure.',
-          recommended: 'Correct Decision: Option 2 (Redirect Alpha to Ridge). When terrain shadowing occurs, active measures like establishing a high-ground relay must be taken immediately before the operational window closes.',
+          tradeoff: decisionRecord.tradeoff,
+          tacticalAnalysis: decisionRecord.tacticalAnalysis,
+          alternative: decisionRecord.alternativeConsideration,
+          decisionRecord,
         },
+        decisionHistory: [decisionRecord],
       });
 
     } else if (optionId === 'recall') {
@@ -475,6 +530,26 @@ export function createImmersionTimeline(dispatch) {
       // Contact restored at entrance.
       // Trade-off: Team safe, but reconnaissance abandoned and time lost.
       // -------------------------------------------------------------------
+      decisionRecord = {
+        stepIndex: 1,
+        stepTitle: 'Contact Loss in Northern Gorge',
+        selectedOptionId: 'recall',
+        selectedOptionLabel: 'C',
+        selectedOptionTitle: 'Recall Bravo',
+        responseTimeMs,
+        timestamp: Date.now(),
+        situationAtTime: {
+          known: 'Bravo entered northern gorge corridor; VHF telemetry degraded and carrier dropped upon entering terrain shadow cut. Delayed report from OP-2 indicated movement north through gorge pass (3 min latency).',
+          uncertain: 'Exact position, physical status, and route obstruction status of Bravo inside the RF shadow zone.',
+          commStatus: 'Command: Live | Alpha: Live | Bravo: Lost (Carrier Drop) | Charlie: Live',
+        },
+        outcome: 'Bravo acknowledged the wideband emergency broadcast and reversed course out of the gorge, re-establishing intermittent radio contact at the entrance. Reconnaissance intelligence was abandoned.',
+        tradeoff: 'Team preserved from isolation — but reconnaissance intelligence was completely abandoned and operational tempo was forfeited.',
+        tacticalAnalysis: 'Evaluated using information available at the time: Recalling Bravo prioritized unit integrity over the mission objective. While it eliminated isolation risk, RF degradation alone in known shadow terrain is an expected condition that can often be resolved with relays before abandoning the mission.',
+        alternativeConsideration: 'Alternative to consider: Test line-of-sight relay links from adjacent high ground prior to initiating an operational abort.',
+        consequenceText: 'Bravo pulled back toward the gorge edge. Contact was partially restored, but operational time was lost and the objective abandoned.',
+      };
+
       voiceEngine.playSound('squelch');
       dispatch({
         camera: { x: 62, y: 30, zoom: 1.2 },
@@ -518,15 +593,19 @@ export function createImmersionTimeline(dispatch) {
 
       dispatch({
         consequence: {
-          status: 'suboptimal',
-          statusBadge: '⚠ SUB-OPTIMAL — OBJECTIVE ABANDONED',
-          headline: 'BRAVO RECALLED — RECONNAISSANCE FAILED',
+          status: 'withdrawn',
+          statusBadge: 'RECONNAISSANCE CURTAILED — ASSET PRESERVED',
+          headline: 'BRAVO RECALLED — RECONNAISSANCE ABORTED',
           choiceMade: 'Option 3: Recall Bravo',
+          situationAtTime: decisionRecord.situationAtTime,
+          outcome: decisionRecord.outcome,
           detail: 'Bravo acknowledged the wideband recall broadcast and reversed course out of the gorge corridor, re-establishing intermittent radio contact at the entrance.',
-          tradeoff: 'Team preserved from isolation — but reconnaissance intelligence was completely abandoned and operational tempo was forfeited.',
-          explanation: 'Why this was sub-optimal: Calling an immediate retreat was an overreaction to expected RF attenuation in a gorge. Signal degradation alone does not mean the team is in immediate jeopardy if adjacent units can provide line-of-sight relay.',
-          recommended: 'Better Decision: Option 2 (Redirect Alpha to Ridge). Test communications through an elevated relay first. Only recall teams if relay attempts fail or confirmed hostile/environmental threats emerge.',
+          tradeoff: decisionRecord.tradeoff,
+          tacticalAnalysis: decisionRecord.tacticalAnalysis,
+          alternative: decisionRecord.alternativeConsideration,
+          decisionRecord,
         },
+        decisionHistory: [decisionRecord],
       });
     }
   }

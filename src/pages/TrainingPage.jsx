@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTraining } from '../context/TrainingContext';
+import { getScenarioById } from '../data/scenarios';
 import { SIGNAL_LOSS_SCENARIO } from '../data/signalLossScenario';
 import ImmersionScene from '../immersion/ImmersionScene';
 import './TrainingPage.css';
@@ -58,7 +59,24 @@ export default function TrainingPage() {
 
   if (!isLoggedIn) return null;
 
-  const scenario = SIGNAL_LOSS_SCENARIO;
+  const currentScenarioId = scenarioId || 'scenario-01';
+  const baseScenario = getScenarioById(currentScenarioId);
+  const scenario = currentScenarioId === 'scenario-01' ? { ...baseScenario, ...SIGNAL_LOSS_SCENARIO } : baseScenario;
+
+  const briefingRole =
+    typeof scenario.briefing === 'object'
+      ? scenario.briefing.role
+      : 'Communications Coordinator';
+
+  const briefingObjective =
+    typeof scenario.briefing === 'object'
+      ? scenario.briefing.objective
+      : (scenario.trainingFocus || scenario.coreLesson);
+
+  const briefingPriority =
+    typeof scenario.briefing === 'object'
+      ? scenario.briefing.currentPriority
+      : 'Maintain Coordination';
 
   // -------------------------------------------------------------------------
   // 1. IMMERSION MODE — Full-screen scene takes over
@@ -92,16 +110,16 @@ export default function TrainingPage() {
             <div className="sim-ready__role-card">
               <div className="sim-ready__role-item">
                 <span className="sim-ready__label">ROLE</span>
-                <span className="sim-ready__value">{scenario.briefing.role}</span>
+                <span className="sim-ready__value">{briefingRole}</span>
               </div>
               <div className="sim-ready__role-item">
                 <span className="sim-ready__label">OBJECTIVE</span>
-                <span className="sim-ready__value">{scenario.briefing.objective}</span>
+                <span className="sim-ready__value">{briefingObjective}</span>
               </div>
               <div className="sim-ready__role-item">
                 <span className="sim-ready__label">CURRENT PRIORITY</span>
                 <span className="sim-ready__value sim-ready__value--alert">
-                  {scenario.briefing.currentPriority}
+                  {briefingPriority}
                 </span>
               </div>
             </div>

@@ -18,7 +18,7 @@ export default function AnalysisPage() {
   const currentScenarioId = scenarioId || 'scenario-01';
   const scenario = getScenarioById(currentScenarioId);
   const latestResult = getLatestResult(currentScenarioId);
-  const history = latestResult?.history || [];
+  const history = useMemo(() => latestResult?.history || [], [latestResult]);
   const trainingMode = latestResult?.trainingMode || 'guided';
 
   const formatMs = (ms) => {
@@ -29,26 +29,50 @@ export default function AnalysisPage() {
 
   // Derive qualitative training observations from trainee's actual decisions
   const observations = useMemo(() => {
-    if (history.length === 0) return null;
+    if (!history || history.length === 0) return null;
+
+    // Analyze Step 1: RF deadzone reaction / Contact loss
+    const step1 = history.find(h => h.stepIndex === 1);
+    let infoHandling = 'Recognized terrain masking and prioritized active relay line-of-sight.';
+    let uncertaintyHandling = 'Positioned nearby element on high ground to re-establish line-of-sight without panic.';
+    let timeManagement = 'Preserved momentum and prevented the weather front from closing the operational window.';
+
+    if (step1) {
+      if (step1.selectedOptionId === 'hold' || step1.selectedOptionLabel === 'A') {
+        infoHandling = 'Accepted latency and waited for scheduled check-in window despite confirmed terrain obstruction.';
+        uncertaintyHandling = 'Maintained strategic posture at southern ridge; allowed uncertainty area to expand as weather deteriorated.';
+        timeManagement = 'Allowed the operational window to close while awaiting check-in transmission.';
+      } else if (step1.selectedOptionId === 'relay' || step1.selectedOptionLabel === 'B') {
+        infoHandling = 'Recognized line-of-sight RF deadzone and leveraged intermediate high ground to restore communication.';
+        uncertaintyHandling = 'Resolved uncertainty directly, uncovering physical rockfall obstacle inside the corridor.';
+        timeManagement = 'Maintained operational tempo and enabled rerouting before the storm front arrived.';
+      } else if (step1.selectedOptionId === 'recall' || step1.selectedOptionLabel === 'C') {
+        infoHandling = 'Treated RF carrier drop as an immediate operational halt signal.';
+        uncertaintyHandling = 'Eliminated unit isolation risk through prompt egress; prioritized physical force integrity.';
+        timeManagement = 'Sacrificed operational timetable and reconnaissance objectives to eliminate ambiguity.';
+      }
+    }
 
     // Analyze Step 2: Telemetry latency handling
     const step2 = history.find(h => h.stepIndex === 2);
-    let infoHandling = 'Recognized latency and prioritized active relay line-of-sight.';
-    if (step2?.selectedOptionLabel === 'B') {
-      infoHandling = 'Accepted latency and continued via dead-reckoning; kept speed high while accepting uncertainty.';
-    } else if (step2?.selectedOptionLabel === 'C') {
-      infoHandling = 'Prioritized permanent communication infrastructure over operational speed.';
+    if (step2) {
+      if (step2.selectedOptionLabel === 'B') {
+        infoHandling = 'Accepted latency and continued via dead-reckoning; kept speed high while accepting uncertainty.';
+      } else if (step2.selectedOptionLabel === 'C') {
+        infoHandling = 'Prioritized permanent communication infrastructure over operational speed.';
+      }
     }
 
     // Analyze Step 3: Silence / Lost contact reaction
     const step3 = history.find(h => h.stepIndex === 3);
-    let uncertaintyHandling = 'Positioned nearby element on high ground to re-establish line-of-sight without panic.';
-    if (step3?.selectedOptionLabel === 'A') {
-      uncertaintyHandling = 'Maintained strategic intent and trusted SOPs without diverting adjacent assets.';
-    } else if (step3?.selectedOptionLabel === 'C') {
-      uncertaintyHandling = 'Triggered full emergency halt; showed high caution, though static resulted in operational delay.';
-    } else if (step3?.selectedOptionLabel === 'D') {
-      uncertaintyHandling = 'Vectored support flank to reinforce; showed high solidarity but uncovered the eastern flank.';
+    if (step3) {
+      if (step3.selectedOptionLabel === 'A') {
+        uncertaintyHandling = 'Maintained strategic intent and trusted SOPs without diverting adjacent assets.';
+      } else if (step3.selectedOptionLabel === 'C') {
+        uncertaintyHandling = 'Triggered full emergency halt; showed high caution, though static resulted in operational delay.';
+      } else if (step3.selectedOptionLabel === 'D') {
+        uncertaintyHandling = 'Vectored support flank to reinforce; showed high solidarity but uncovered the eastern flank.';
+      }
     }
 
     // Analyze Step 4: Contradiction resolution
@@ -62,11 +86,12 @@ export default function AnalysisPage() {
 
     // Analyze Step 5: Time window & risk
     const step5 = history.find(h => h.stepIndex === 5);
-    let timeManagement = 'Concentrated all forces at the extraction point to beat the weather front.';
-    if (step5?.selectedOptionLabel === 'B') {
-      timeManagement = 'Created a security buffer probe to verify the locator beacon before committing the main body.';
-    } else if (step5?.selectedOptionLabel === 'C') {
-      timeManagement = 'Chose safety harbor in place; prioritized physical security over mission timetable.';
+    if (step5) {
+      if (step5.selectedOptionLabel === 'B') {
+        timeManagement = 'Created a security buffer probe to verify the locator beacon before committing the main body.';
+      } else if (step5.selectedOptionLabel === 'C') {
+        timeManagement = 'Chose safety harbor in place; prioritized physical security over mission timetable.';
+      }
     }
 
     return {
@@ -120,7 +145,7 @@ export default function AnalysisPage() {
             <strong>"{scenario.coreLesson || 'Communication is not always reliable. Do not assume silence means destruction, and never act on stale coordinates without verifying latency.'}"</strong>
           </p>
           <span className="analysis-page__core-lesson-mode">
-            Session Mode: <strong>{trainingMode.toUpperCase()}</strong> • 6 of 6 Decision Points Evaluated
+            Session Mode: <strong>{trainingMode.toUpperCase()}</strong> • {history.length} Decision Point{history.length !== 1 ? 's' : ''} Evaluated
           </span>
         </div>
 
@@ -185,21 +210,58 @@ export default function AnalysisPage() {
                       <div className="analysis-trail-item__action">
                         <span className="badge badge--info">OPTION {rec.selectedOptionLabel}</span>
                         <span className="analysis-trail-item__action-title">{rec.selectedOptionTitle}</span>
-                        {rec.tradeoff && (
-                          <span className="badge badge--beginner" style={{ marginLeft: '6px' }}>{rec.tradeoff}</span>
-                        )}
                       </div>
                     </div>
 
+                    {rec.situationAtTime && (
+                      <div className="analysis-trail-item__situation">
+                        <span className="analysis-trail-item__sublabel">SITUATION AT TIME OF DECISION:</span>
+                        <div className="analysis-trail-item__situation-grid">
+                          {rec.situationAtTime.known && (
+                            <div className="analysis-trail-item__situation-row">
+                              <span className="analysis-trail-item__tag">KNOWN:</span>
+                              <span className="analysis-trail-item__text">{rec.situationAtTime.known}</span>
+                            </div>
+                          )}
+                          {rec.situationAtTime.uncertain && (
+                            <div className="analysis-trail-item__situation-row">
+                              <span className="analysis-trail-item__tag">UNCERTAIN:</span>
+                              <span className="analysis-trail-item__text">{rec.situationAtTime.uncertain}</span>
+                            </div>
+                          )}
+                          {rec.situationAtTime.commStatus && (
+                            <div className="analysis-trail-item__situation-row">
+                              <span className="analysis-trail-item__tag">COMM STATUS:</span>
+                              <span className="analysis-trail-item__text">{rec.situationAtTime.commStatus}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="analysis-trail-item__what-happened">
-                      <span className="analysis-trail-item__sublabel">OPERATIONAL CONSEQUENCE:</span>
-                      <p className="analysis-trail-item__narrative">{rec.consequenceText}</p>
+                      <span className="analysis-trail-item__sublabel">OBSERVABLE OUTCOME:</span>
+                      <p className="analysis-trail-item__narrative">{rec.outcome || rec.consequenceText}</p>
                     </div>
 
-                    {rec.teachingTakeaway && (
+                    {rec.tradeoff && (
+                      <div className="analysis-trail-item__tradeoff">
+                        <span className="analysis-trail-item__sublabel">OPERATIONAL TRADE-OFF:</span>
+                        <p className="analysis-trail-item__tradeoff-text">{rec.tradeoff}</p>
+                      </div>
+                    )}
+
+                    {(rec.tacticalAnalysis || rec.teachingTakeaway) && (
                       <div className="analysis-trail-item__takeaway">
-                        <span className="analysis-trail-item__sublabel">PEDAGOGICAL TAKEAWAY:</span>
-                        <p className="analysis-trail-item__takeaway-text">{rec.teachingTakeaway}</p>
+                        <span className="analysis-trail-item__sublabel">TACTICAL EVALUATION (AT TIME OF DECISION):</span>
+                        <p className="analysis-trail-item__takeaway-text">{rec.tacticalAnalysis || rec.teachingTakeaway}</p>
+                      </div>
+                    )}
+
+                    {(rec.alternativeConsideration || rec.recommended) && (
+                      <div className="analysis-trail-item__alternative">
+                        <span className="analysis-trail-item__sublabel">ALTERNATIVE TO CONSIDER:</span>
+                        <p className="analysis-trail-item__alternative-text">{rec.alternativeConsideration || rec.recommended}</p>
                       </div>
                     )}
                   </div>

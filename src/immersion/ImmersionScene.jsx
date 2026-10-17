@@ -18,8 +18,9 @@ import { scenarioAudioController } from '../audio/ScenarioAudioController.js';
 import { voiceEngine } from '../audio/VoiceEngine.js';
 import './ImmersionScene.css';
 
-export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
+export default function ImmersionScene({ onExit, onComplete }) {
   const [started, setStarted] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [world, setWorld] = useState({
     phase: 'ready', // ready | briefing | observing | deciding | consequence
     camera: { x: 50, y: 50, zoom: 1 },
@@ -32,6 +33,7 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
     uncertaintyTarget: null,
     delayedReport: null,
     consequence: null,
+    decisionHistory: [],
     isSpeaking: false,
     isRelayActive: false,
   });
@@ -121,7 +123,8 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
   }, []);
 
   const handleDecision = useCallback((optionId) => {
-    if (world.phase !== 'deciding') return;
+    if (world.phase !== 'deciding' || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     // Silence audio immediately so previous speech does not collapse with consequence audio
     scenarioAudioController.stop();
     voiceEngine.stop();
@@ -134,6 +137,7 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
   useEffect(() => {
     if (!world.decision || world.phase !== 'deciding') return;
     const handler = (e) => {
+      if (isSubmittingRef.current) return;
       const opt = world.decision.options.find((o) => o.key === e.key);
       if (opt) {
         handleDecision(opt.id);
@@ -145,6 +149,7 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
 
   // Handlers
   const handleStart = useCallback(() => {
+    isSubmittingRef.current = false;
     // 1. Immediately and synchronously unlock browser audio
     voiceEngine.unlockAudio();
     voiceEngine.playSound('alert');
@@ -159,6 +164,7 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
   }, [isAudioOn]);
 
   const handleRestart = useCallback(() => {
+    isSubmittingRef.current = false;
     scenarioAudioController.stop();
     voiceEngine.stop();
     voiceEngine.unlockAudio();
@@ -166,6 +172,23 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
       timelineRef.current.start();
     }
   }, []);
+
+  const handleReviewDebrief = useCallback(() => {
+    scenarioAudioController.stop();
+    voiceEngine.stop();
+    if (timelineRef.current) {
+      timelineRef.current.cleanup();
+    }
+    const history =
+      world.decisionHistory && world.decisionHistory.length > 0
+        ? world.decisionHistory
+        : world.consequence?.decisionRecord
+        ? [world.consequence.decisionRecord]
+        : [];
+    if (onComplete) {
+      onComplete(history);
+    }
+  }, [world.decisionHistory, world.consequence, onComplete]);
 
   const handleExit = useCallback(() => {
     scenarioAudioController.stop();
@@ -856,12 +879,12 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
       )}
 
       {/* ================================================================= */}
-      {/* 9 & 10. OBSERVABLE CONSEQUENCE, TACTICAL ANALYSIS & RECOMMENDATION */}
+      {/* 9 & 10. OBSERVABLE CONSEQUENCE & OPERATIONAL DEBRIEF              */}
       {/* ================================================================= */}
       {consequence && (
         <div className={`immersion__consequence ${consequence.status ? `is-${consequence.status}` : ''}`}>
           <div className="immersion__consequence-header-row">
-            <div className="immersion__consequence-tag">DEBRIEF & CONSEQUENCE</div>
+            <div className="immersion__consequence-tag">OPERATIONAL DEBRIEF</div>
             {consequence.statusBadge && (
               <div className={`immersion__consequence-badge is-${consequence.status}`}>
                 {consequence.statusBadge}
@@ -873,12 +896,31 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
 
           {consequence.choiceMade && (
             <div className="immersion__consequence-choice">
-              <span className="immersion__consequence-choice-label">YOUR DECISION: </span>
+              <span className="immersion__consequence-choice-label">DECISION COMMITTED: </span>
               <span className="immersion__consequence-choice-val">{consequence.choiceMade}</span>
             </div>
           )}
 
-          <div className="immersion__consequence-detail">{consequence.detail}</div>
+          {consequence.situationAtTime && (
+            <div className="immersion__consequence-situation-box">
+              <div className="immersion__consequence-situation-label">SITUATION AT TIME OF DECISION</div>
+              <div className="immersion__consequence-situation-item">
+                <span className="immersion__consequence-subtag">KNOWN:</span> {consequence.situationAtTime.known}
+              </div>
+              <div className="immersion__consequence-situation-item">
+                <span className="immersion__consequence-subtag">UNCERTAIN:</span> {consequence.situationAtTime.uncertain}
+              </div>
+              {consequence.situationAtTime.commStatus && (
+                <div className="immersion__consequence-situation-item">
+                  <span className="immersion__consequence-subtag">CHANNELS:</span> {consequence.situationAtTime.commStatus}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="immersion__consequence-detail">
+            {consequence.outcome || consequence.detail}
+          </div>
 
           {consequence.tradeoff && (
             <div className="immersion__consequence-tradeoff-box">
@@ -887,30 +929,37 @@ export default function ImmersionScene({ onExit, onComplete: _onComplete }) {
             </div>
           )}
 
-          {consequence.explanation && (
+          {(consequence.tacticalAnalysis || consequence.explanation) && (
             <div className="immersion__consequence-explanation-box">
               <div className="immersion__consequence-explanation-label">
-                {consequence.status === 'pass' ? 'TACTICAL ANALYSIS (WHY THIS SUCCEEDED)' : 'TACTICAL ANALYSIS (WHY THIS WAS WRONG / SUB-OPTIMAL)'}
+                TACTICAL EVALUATION (AT TIME OF DECISION)
               </div>
-              <div className="immersion__consequence-explanation-text">{consequence.explanation}</div>
+              <div className="immersion__consequence-explanation-text">
+                {consequence.tacticalAnalysis || consequence.explanation}
+              </div>
             </div>
           )}
 
-          {consequence.recommended && (
+          {(consequence.alternative || consequence.recommended) && (
             <div className="immersion__consequence-recommended-box">
               <div className="immersion__consequence-recommended-label">
-                RECOMMENDED DOCTRINE / WHAT ANSWER SHOULD BE THERE
+                ALTERNATIVE TO CONSIDER
               </div>
-              <div className="immersion__consequence-recommended-text">{consequence.recommended}</div>
+              <div className="immersion__consequence-recommended-text">
+                {consequence.alternative || consequence.recommended}
+              </div>
             </div>
           )}
 
           <div className="immersion__consequence-actions">
-            <button className="immersion__btn-replay" onClick={handleRestart}>
+            <button className="immersion__btn-replay" onClick={handleRestart} title="Replay scenario from start">
               RETRY EXERCISE
             </button>
-            <button className="immersion__btn-exit" onClick={handleExit}>
-              EXIT EXERCISE
+            <button className="immersion__btn-review" onClick={handleReviewDebrief} title="Proceed to complete training debrief analysis">
+              REVIEW COMPREHENSIVE DEBRIEF →
+            </button>
+            <button className="immersion__btn-exit" onClick={handleExit} title="Exit to scenario curriculum">
+              EXIT
             </button>
           </div>
         </div>
