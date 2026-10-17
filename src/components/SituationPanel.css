@@ -1,0 +1,253 @@
+.situation-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.situation-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px var(--space-4);
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.situation-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.situation-panel__label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.situation-panel__step {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--color-bg);
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+
+.situation-panel__step-title {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.situation-panel__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.situation-panel__rel-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.situation-panel__content {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* "WHAT HAPPENED" Consequence Box */
+
+.situation-panel__consequence {
+  padding: var(--space-3) var(--space-4);
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.situation-panel__consequence-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.situation-panel__consequence-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--color-accent);
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+}
+
+.situation-panel__consequence-choice {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.situation-panel__consequence-text {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.situation-panel__consequence-lesson {
+  font-size: 0.75rem;
+  color: #1e3a5f;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  line-height: 1.45;
+}
+
+.situation-panel__lesson-label {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* Teaching Guidance / Learning Point Callout */
+
+.situation-panel__guidance {
+  padding: var(--space-3) var(--space-4);
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-left: 4px solid #ca8a04;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.situation-panel__guidance-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.situation-panel__guidance-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.situation-panel__guidance-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: #ca8a04;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+}
+
+.situation-panel__guidance-concept {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: #854d0e;
+  font-family: var(--font-mono);
+}
+
+.situation-panel__guidance-toggle {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #a16207;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.situation-panel__guidance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.situation-panel__guidance-insight {
+  font-size: var(--text-xs);
+  color: #713f12;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.situation-panel__guidance-rule {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: #854d0e;
+  background: rgba(254, 240, 138, 0.4);
+  padding: 3px 6px;
+  border-radius: var(--radius-xs);
+}
+
+/* Event Headline & Narrative */
+
+.situation-panel__headline {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.situation-panel__narrative {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.situation-panel__critical {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 8px var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.situation-panel__critical-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.situation-panel__critical-text {
+  color: var(--color-text);
+  line-height: 1.45;
+}
